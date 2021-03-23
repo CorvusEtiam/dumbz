@@ -1,6 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
-const Opcode = @import("./opcodes.zig").Opcode;
+const opcodes = @import("./opcodes.zig");
+const Opcode = opcodes.Opcode;
 const Chunk  = @import("./chunk.zig").Chunk;
 
 pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
@@ -15,6 +16,13 @@ fn simpleInstruction(name: []const u8, offset: usize) usize {
     print("{s}\n", .{name});
     return offset + 1;
 }
+
+const U3Slice = packed struct {
+    a: u8,
+    b: u8,
+    c: u8,
+    ___filler__: u8 = 0,
+};
 
 fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
     print("{d:0>4}    ", .{offset});
@@ -31,6 +39,10 @@ fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
             print("OP_CONSTANT        <{d}>\n", .{chunk.readConstant(index)});
             return offset + 2;
         },
+        Opcode.ConstantLong => {
+            var long_index = opcodes.slice_to_long_index(chunk.code.items[offset + 1..offset + 4]);
+            print("OP_CONSTANT .L     <{d}>\n", .{chunk.readConstant(long_index)});
+        }
     }
     return offset + 1;
 }

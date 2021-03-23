@@ -1,5 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
+const opcodes = @import("./opcodes.zig");
 const Opcode = @import("./opcodes.zig").Opcode;
 
 const Allocator = @import("std").mem.Allocator;
@@ -85,10 +86,23 @@ pub const Chunk = struct {
         return self.code.items[index];
     }
 
-    pub fn writeConstant(self: *Self, value: f32) usize {
-        const tmp = self.constantCount();
+    pub fn readSlice(self: *Self, offset: usize, len: usize) []u8 {
+        return self.code.items[offset..offset+len];
+    }
+
+    pub fn writeConstant(self: *Self, value: f32, line_num: usize) void {
+        var tmp = self.constantCount();
         self.constants.append(value) catch |err| { std.debug.panic("ERROR while allocating space for: {d}", .{value}); };
-        return tmp;
+        if ( tmp <= 255 ) {
+            self.writeOpcode(Opcode.Constant, line_num);
+            self.write(@intCast(u8, tmp), line_num);
+        } else {
+            self.writeOpcode(Opcode.ConstantLong, line_num);
+            var unpacked = opcodes.unpack_long_index(tmp);
+            self.write(unpacked.a, line_num);
+            self.write(unpacked.b, line_num);
+            self.write(unpacked.c, line_num);
+        }
     }
 
     pub fn readConstant(self: *Self, index: usize) f32 {

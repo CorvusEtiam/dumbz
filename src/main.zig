@@ -14,9 +14,7 @@ pub fn main() anyerror!void {
     
     std.debug.print("-------------------------------------\n", .{});
     
-    var constant = chunk.writeConstant(@as(f32, 120.0));
-    chunk.writeOpcode(Opcode.Constant, 123);
-    chunk.write(@intCast(u8, constant), 123);
+    chunk.writeConstant(120.0, 123);
     chunk.writeOpcode(Opcode.Return, 123);
 
     disasm.disassembleChunk(&chunk, "RET");
