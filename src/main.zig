@@ -15,14 +15,9 @@ pub fn main() anyerror!void {
     std.debug.print("-------------------------------------\n", .{});
     
     var constant = chunk.writeConstant(@as(f32, 120.0));
-    chunk.write(@enumToInt(Opcode.Constant));
-    var index = @intCast(u8, constant);
-    chunk.write(index);
-    chunk.write(@enumToInt(Opcode.Return));
+    chunk.writeOpcode(Opcode.Constant, 123);
+    chunk.write(@intCast(u8, constant), 123);
+    chunk.writeOpcode(Opcode.Return, 123);
 
     disasm.disassembleChunk(&chunk, "RET");
-
-    std.debug.print("-------------------------------------\n", .{});
-    std.debug.print("\n\n", .{});
-    std.debug.print("Size of usize: {d}", .{@sizeOf(usize)});
 }
