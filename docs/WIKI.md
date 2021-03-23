@@ -17,4 +17,8 @@ var allocator = &gpa.allocator
 //            --^-- - remember to access as slice
 ```
 
+# Format Strings
 
+> print("{d}", .{double});
+> print("{d<4}", {right_padded_double});
+> print("{}")

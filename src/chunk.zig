@@ -16,7 +16,6 @@ const ArrayList = std.ArrayList;
 /// > 1 1 1 2 2 4 4 4 4 5 5 5
 /// > 1 3  2 2  4 4  5 3
 /// > 6th => 3 2 4
-
 const LineSpan = packed struct {
     line: u32,
     length: u32,
@@ -26,12 +25,12 @@ pub const Chunk = struct {
     const Self = @This();
     code: ArrayList(u8),
     constants: ArrayList(f32),
-    lines: ArrayList(LineSpan), 
+    lines: ArrayList(LineSpan),
 
     pub fn opCount(self: *Self) usize {
         return self.code.items.len;
     }
-    
+
     pub fn constantCount(self: *Self) usize {
         return self.constants.items.len;
     }
@@ -51,22 +50,23 @@ pub const Chunk = struct {
     }
 
     pub fn write(self: *Self, byte: u8, line_number: usize) void {
-        self.code.append(byte) catch |err| { std.debug.panic("ERROR while allocating space for: {d}", .{byte}); };
-        if ( self.lines.items.len > 0 and self.lines.items[self.lines.items.len - 1].line == line_number ) {
+        self.code.append(byte) catch |err| {
+            std.debug.panic("ERROR while allocating space for: {d}", .{byte});
+        };
+        if (self.lines.items.len > 0 and self.lines.items[self.lines.items.len - 1].line == line_number) {
             self.lines.items[self.lines.items.len - 1].length += 1;
         } else {
-            self.lines.append(LineSpan { .length = 1, .line = @intCast(u32, line_number) }) catch unreachable;
+            self.lines.append(LineSpan{ .length = 1, .line = @intCast(u32, line_number) }) catch unreachable;
         }
     }
 
-
     pub fn getLine(self: *Self, offset: usize) usize {
-        const index = @intCast(u32, offset); 
+        const index = @intCast(u32, offset);
         var i: usize = 0;
         var acc: usize = 0;
-        while ( i < self.lines.items.len ) {
+        while (i < self.lines.items.len) {
             var curr = self.lines.items[i];
-            if ( offset >= acc and offset < acc + curr.length) {
+            if (offset >= acc and offset < acc + curr.length) {
                 return @as(usize, curr.line);
             } else { // offset > acc + curr.len
                 acc += curr.length;
@@ -87,13 +87,15 @@ pub const Chunk = struct {
     }
 
     pub fn readSlice(self: *Self, offset: usize, len: usize) []u8 {
-        return self.code.items[offset..offset+len];
+        return self.code.items[offset .. offset + len];
     }
 
     pub fn writeConstant(self: *Self, value: f32, line_num: usize) void {
         var tmp = self.constantCount();
-        self.constants.append(value) catch |err| { std.debug.panic("ERROR while allocating space for: {d}", .{value}); };
-        if ( tmp <= 255 ) {
+        self.constants.append(value) catch |err| {
+            std.debug.panic("ERROR while allocating space for: {d}", .{value});
+        };
+        if (tmp <= 255) {
             self.writeOpcode(Opcode.Constant, line_num);
             self.write(@intCast(u8, tmp), line_num);
         } else {
