@@ -21,6 +21,7 @@ const LineSpan = packed struct {
     length: u32,
 };
 
+
 pub const Chunk = struct {
     const Self = @This();
     code: ArrayList(u8),
@@ -100,14 +101,13 @@ pub const Chunk = struct {
             self.write(@intCast(u8, tmp), line_num);
         } else {
             self.writeOpcode(Opcode.ConstantLong, line_num);
-            var unpacked = opcodes.unpack_long_index(tmp);
-            self.write(unpacked.a, line_num);
-            self.write(unpacked.b, line_num);
-            self.write(unpacked.c, line_num);
+            var buf: [3]u8 = undefined;
+            std.mem.writeIntLittle(u24, &buf, @intCast(u24, tmp));
+            self.code.appendSlice(&buf) catch unreachable;
         }
     }
 
-    pub fn readConstant(self: *Self, index: usize) f32 {
-        return self.constants.items[index];
+    pub fn readConstant(self: *Self, constant_index: usize) f32 {
+        return self.constants.items[constant_index];
     }
 };
