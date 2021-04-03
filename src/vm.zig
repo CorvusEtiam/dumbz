@@ -76,7 +76,7 @@ pub const VirtualMachine = struct {
     pub fn run(self: *Self) InterpreterError!InterpreterResult {
         while (true) {
             if (debug.has_tracing_enabled) {
-                debug.printStack(self.stack);
+                debug.printStack(self.stack.items);
                 _ = debug.disassembleInstruction(self.chunk, self.ip);
 
             }
@@ -101,26 +101,26 @@ pub const VirtualMachine = struct {
                     self.ip += 3;
                 },
                 Opcode.Negate => {
-                    self.pushStack(-self.popStack());
+                    self.stack.items[self.stack.items.len - 1] = -self.stack.items[self.stack.items.len - 1]; 
                 },
                 Opcode.Add => {
-                    var a : my.Value = self.popStack();
                     var b : my.Value = self.popStack();
+                    var a : my.Value = self.popStack();
                     self.pushStack(a + b);
                 },
                 Opcode.Substract => {
-                    var a : my.Value = self.popStack();
                     var b : my.Value = self.popStack();
+                    var a : my.Value = self.popStack();
                     self.pushStack(a - b);
                 },
                 Opcode.Multiply => {
-                    var a : my.Value = self.popStack();
                     var b : my.Value = self.popStack();
+                    var a : my.Value = self.popStack();
                     self.pushStack(a * b);
                 },
                 Opcode.Divide => {
-                    var a : my.Value = self.popStack();
                     var b : my.Value = self.popStack();
+                    var a : my.Value = self.popStack();
                     self.pushStack(a / b);
                 },
                 

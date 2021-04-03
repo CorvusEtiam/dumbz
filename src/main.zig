@@ -23,9 +23,30 @@ fn printVersion() void {
     std.debug.print("Dumbz: 0.0.1 \n", .{});
 }
 
-fn runRepl(allocator: *std.mem.Allocator) void {
-    std.debug.print("\x1b[31m  > TODO: REPL\x1b[0m\n", .{});
-    return;
+fn readPrompt(allocator: *std.mem.Allocator, prompt: []const u8, max_size: usize) ![]u8 {
+    const in = std.io.getStdIn().reader();
+    const out = std.io.getStdOut().writer();
+    _ = try out.write(prompt);
+    
+    const result = try in.readUntilDelimiterAlloc(allocator, '\n', max_size);
+    return if (std.mem.endsWith(u8, result, "\r")) result[0..(result.len - 1)] else result;
+}
+
+fn runRepl(allocator: *std.mem.Allocator) !void {
+    const in = std.io.getStdIn().reader();
+    const out = std.io.getStdOut().writer();
+
+    while (true) {
+        var result = try readPrompt(allocator, "=> ", 1024);
+        if ( std.mem.startsWith(u8, result, "quit") ) {
+            _ = try out.print("-------- EXITING\n", .{});
+            return;
+        }
+        _ = try out.print("Command to be executed: \n", .{});
+        _ = try out.write(result);
+        _ = try out.write("\n");
+        my.compile(result);
+    }
 }
 
 fn runFile(file_name: [] const u8, allocator: *std.mem.Allocator) void {
@@ -90,10 +111,15 @@ fn runCode(allocator: *std.mem.Allocator) anyerror!void {
 
     var vm = my.VirtualMachine.init(allocator);
     
-    chunk.writeConstant(125.00, 123);
-    chunk.writeConstant(160.20, 123);
-    chunk.writeConstant(195.30, 124);
-    chunk.writeConstant(240.50, 124);
+
+
+
+    chunk.writeConstant(3.14, 123);
+    chunk.writeConstant(6.86, 123);
+    chunk.writeOpcode(my.Opcode.Add, 123);
+    chunk.writeConstant(2.0, 123);
+    chunk.writeOpcode(my.Opcode.Divide, 123);
+    chunk.writeOpcode(my.Opcode.Negate, 123);
     chunk.writeOpcode(my.Opcode.Return, 125);
 
     var ok = vm.interpret(&chunk) catch |err| {
