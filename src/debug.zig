@@ -1,8 +1,11 @@
 const std = @import("std");
-const print = std.debug.print;
+const my = @import("./my.zig");
+
 const opcodes = @import("./opcodes.zig");
 const Opcode = opcodes.Opcode;
 const Chunk = @import("./chunk.zig").Chunk;
+
+const print = std.debug.print;
 
 pub const has_tracing_enabled : bool = false;
 
@@ -47,6 +50,31 @@ pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
             print("OP_CONSTANT .L     <{d:.2}>\n", .{chunk.readConstant(long_index)});
             return offset + 3;
         },
+        Opcode.Add => {
+            print("OP_ADD\n", .{});
+        },
+        Opcode.Substract => {
+            print("OP_SUB\n", .{});
+        },
+        Opcode.Divide => { 
+            print("OP_DIV\n", .{});
+        },
+        Opcode.Multiply => { 
+            print("OP_MUL\n", .{});
+        },
+        Opcode.Negate => { 
+            print("OP_NEG\n", .{});
+        }
     }
     return offset + 1;
+}
+
+pub fn printStack(stack: []my.Value) void {
+    print("          ", .{});
+    for ( stack ) | value | {
+        print("[ ", .{});
+        my.printValue(value);
+        print(" ]", .{});
+    } 
+    print("\n", .{});
 }

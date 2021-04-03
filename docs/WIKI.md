@@ -39,3 +39,21 @@ print("{}")
 ```
 
 # Compile-Time If
+
+```rust
+const x: bool = false;
+if ( x ) {
+    // this should show up in assembly only when x is true!
+} else {
+    // otherwise; no comptime required. 
+}
+```
+
+# Arrays
+
+## Multidimensional Arrays
+
+## Allocating arrays in functions
+
+* Requires alloc for runtime-known size
+    

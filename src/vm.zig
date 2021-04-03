@@ -1,4 +1,5 @@
 const std = @import("std");
+const my = @import("./my.zig");
 
 const chunks = @import("./chunk.zig");
 const debug = @import("./debug.zig");
@@ -7,10 +8,6 @@ const opcodes = @import("./opcodes.zig");
 const Chunk = chunks.Chunk;
 const Opcode = opcodes.Opcode;
 
-const Value = f32;
-pub fn printValue(v: Value) void {
-    std.debug.print("CONST: {d:.2}\n", .{v});
-}
 
 pub const InterpreterResult = enum {
     Ok,
@@ -26,10 +23,12 @@ pub const VirtualMachine = struct {
     chunk: *chunks.Chunk = undefined,
     // I change it a bit from original, because any instruction change will invalidate IP pointers.
     ip: usize,
+    stack: std.ArrayList(my.Value),
 
     pub fn init(allocator: *std.mem.Allocator) Self {
         return VirtualMachine{
             .ip = 0,
+            .stack = std.ArrayList(my.Value).init(allocator),
         };
     }
 
@@ -59,29 +58,76 @@ pub const VirtualMachine = struct {
         return self.chunk.constants.items;
     }
 
+    pub fn resetStack(self: *Self) void {
+        std.mem.set(my.Value, self.stack.items, 0.0);
+        const allocator = self.stack.allocator;
+        self.stack.deinit();
+        self.stack = std.ArrayList(my.Value).init(self.allocator);
+    }
+
+    pub fn popStack(self: *Self) my.Value {
+        return self.stack.pop();
+    }
+    
+    pub fn pushStack(self: *Self, v: my.Value) void {
+        self.stack.append(v) catch unreachable;
+    }
+
     pub fn run(self: *Self) InterpreterError!InterpreterResult {
         while (true) {
             if (debug.has_tracing_enabled) {
+                debug.printStack(self.stack);
                 _ = debug.disassembleInstruction(self.chunk, self.ip);
+
             }
             var opcode: opcodes.Opcode = self.nextInstruction();
             switch (opcode) {
-                Opcode.Return => return InterpreterResult.Ok,
+                Opcode.Return => { 
+                    std.debug.print("   ", .{});
+                    my.printValue(self.popStack());
+                    std.debug.print("\n", .{});
+                    return InterpreterResult.Ok;
+                },
                 Opcode.Constant => {
                     var code = self.codeSlice();
                     var idx : usize = @intCast(usize, code[self.ip]);
-                    printValue(self.chunk.constants.items[idx]);
+                    self.stack.append(self.chunk.constants.items[idx]) catch unreachable;
                     self.ip += 1;
                 },
                 Opcode.ConstantLong => {
                     var code = self.codeSlice();
                     var idx = @intCast(usize, std.mem.readIntLittle(u24, code[self.ip..][0..3]));
-                    printValue(self.chunk.constants.items[idx]);
+                    self.stack.append(self.chunk.constants.items[idx]) catch unreachable;
                     self.ip += 3;
                 },
+                Opcode.Negate => {
+                    self.pushStack(-self.popStack());
+                },
+                Opcode.Add => {
+                    var a : my.Value = self.popStack();
+                    var b : my.Value = self.popStack();
+                    self.pushStack(a + b);
+                },
+                Opcode.Substract => {
+                    var a : my.Value = self.popStack();
+                    var b : my.Value = self.popStack();
+                    self.pushStack(a - b);
+                },
+                Opcode.Multiply => {
+                    var a : my.Value = self.popStack();
+                    var b : my.Value = self.popStack();
+                    self.pushStack(a * b);
+                },
+                Opcode.Divide => {
+                    var a : my.Value = self.popStack();
+                    var b : my.Value = self.popStack();
+                    self.pushStack(a / b);
+                },
+                
 //                else => InterpreterError.CompileError,
             }
         }
         return InterpreterResult.Ok;
     }
 };
+

@@ -1,5 +1,10 @@
 pub const Opcode = enum(u8) {
-    Return,
     Constant,
     ConstantLong,
+    Negate,
+    Add,
+    Substract,
+    Multiply,
+    Divide,
+    Return,
 };

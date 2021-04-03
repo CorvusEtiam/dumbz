@@ -1,10 +1,10 @@
 const std = @import("std");
 const print = std.debug.print;
-const opcodes = @import("./opcodes.zig");
-const Opcode = @import("./opcodes.zig").Opcode;
-
-const Allocator = @import("std").mem.Allocator;
 const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
+
+const my = @import("./my.zig");
+const Opcode = my.Opcode;
 
 
 /// Chunk data structure
