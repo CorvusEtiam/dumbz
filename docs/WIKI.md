@@ -57,3 +57,12 @@ if ( x ) {
 
 * Requires alloc for runtime-known size
     
+# On VCPKG usage:
+
+```rust
+if ( exe.target.isWindows() ) {
+        const vcpkgLibPath : []u8 = "D:\\external\\vcpkg\\installed\\x64-windows\\";
+        exe.addLibPath(vcpkgLibPath);
+        exe.linkSystemLibrary("SDL2");
+}
+```
