@@ -14,7 +14,7 @@ pub const debug = @import("./debug.zig");
 const scanner =  @import("./scanner.zig");
 pub const Scanner = scanner.Scanner;
 pub const TokenType = scanner.TokenType;
-
+pub const Token = scanner.Token;
 
 const compiler = @import("./compiler.zig");
 pub const compile = compiler.compile;
