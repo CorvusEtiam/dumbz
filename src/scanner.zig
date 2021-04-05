@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub const TokenType = enum {
 // Single-char
 TokenLeftParen, TokenRightParen, TokenLeftBrace, TokenRightBrace, TokenComma, TokenDot, TokenMinus, TokenPlus, TokenSemicolon, TokenSlash, TokenStar, TokenBang,
@@ -11,6 +13,15 @@ TokenAnd, TokenClass, TokenElse, TokenFalse, TokenFor, TokenFun, TokenIf, TokenN
 TokenError, TokenEof
 };
 
+
+/// Check if char is part of number
+fn is_digit(char: u8) bool {
+    return char >= '0' and char <= '9'; 
+}
+
+fn is_alpha(char: u8) bool {
+    return (char >= 'a' and char <= 'z') or (char >= 'A' and char <= 'Z') or char == '_';
+}
 
 pub const Token = struct {
     token_type: TokenType,
@@ -32,7 +43,6 @@ pub const Token = struct {
             .line = scanner.line,
         };
     }
-
 };
 
 pub const Scanner = struct {
@@ -105,6 +115,14 @@ pub const Scanner = struct {
         }
         
         var byte : u8 = self.advance();
+        if ( is_alpha(byte) ) {
+            return self.lexIdentifier();
+        }
+
+        if ( is_digit(byte) ) {
+            return self.lexNumber();
+        }
+
         switch ( byte ) {
             '(' => return Token.create(self, TokenType.TokenLeftParen),
             ')' => return Token.create(self, TokenType.TokenRightParen),
@@ -133,13 +151,97 @@ pub const Scanner = struct {
                 self.line += 1;
                 return self.nextToken();
             },
+            '"' => {
+                return self.lexString();
+            },
             _   => return Token.create(self, TokenType.TokenNumber),
         }
 
         return Token.err(self, "Unexpected character");
     }
 
-    pub fn advance(self: *Scanner) void {
+    fn lexString(self: *Scanner) ?Token {
+        while ( self.peek() != '"' and !self.isEof() ) {
+            if ( self.peek() == '\n' ) { 
+                self.line += 1;
+            }
+            self.advance();
+        }
+
+        if ( self.isEof() ) return Token.err(self, "Unterminated string");
+        self.advance();
+        return Token.create(self, TokenType.TokenString);
+    }
+
+    fn lexNumber(self: *Scanner) ?Token {
+        while ( is_digit(self.peek()) ) self.advance();
+        
+        if ( self.peek() == '.' and is_digit(self.peekNext()) ) {
+            self.advance(); // skip '.'
+            
+            while ( is_digit(self.peek()) ) self.advance();
+        }
+        
+        return Token.create(self, TokenType.TokenNumber);
+    }
+
+    fn lexIdentifier(self: *Scanner) ?Token {
+        while ( is_alpha(self.peek()) || is_digit(self.peek()) ) self.advance();
+
+        return Token.create(self.lexIdentifierType());
+    }
+    
+    fn checkKeyword(self: *Scanner, rest: []u8, token_type: TokenType) TokenType {
+        var result : TokenType = undefined;
+
+        if ( std.mem.startsWith(u8, self.code[self.current..], rest) ) {
+            self.current += rest.len;
+            result = token_type;
+        } else {
+            result = TokenType.TokenIdentifier;
+        }
+        // advance current index to the end of keyword
+        return result;
+    }
+
+    fn lexIdentifierType(self: *Scanner) TokenType {
+        switch ( self.peek() ) {
+            'a' => return self.checkKeyword("and", TokenType.TokenAnd),
+            'c' => return self.checkKeyword("class", TokenType.TokenClass),
+            'e' => return self.checkKeyword("else", TokenType.TokenElse),
+            'i' => return self.checkKeyword("if", TokenType.TokenIf),
+            'n' => return self.checkKeyword("nil", TokenType.TokenNil),
+            'o' => return self.checkKeyword("or", TokenType.TokenOr),
+            'p' => return self.checkKeyword("print", TokenType.TokenPrint),
+            'r' => return self.checkKeyword("return", TokenType.TokenReturn),
+            's' => return self.checkKeyword("super", TokenType.TokenSuper),
+            'v' => return self.checkKeyword("var", TokenType.TokenVar),
+            'w' => return self.checkKeyword("while", TokenType.TokenWhile),
+            'f' => {
+                if ( self.code.len - self.current > 1 ) {
+                    switch ( self.peekNext() ) {
+                        'a' => return self.checkKeyword("false", TokenType.TokenFalse),
+                        'o' => return self.checkKeyword("for", TokenType.TokenFalse),
+                        'u' => return self.checkKeyword("fun", TokenType.TokenFun),
+                        _ => return TokenType.TokenIdentifier,
+                    }
+                }
+            },
+            't' => {
+                if ( self.code.len - self.current > 1 ) {
+                    switch ( self.peekNext() ) {
+                        'h' => return self.checkKeyword("this", TokenType.TokenThis),
+                        'r' => return self.checkKeyword("true", TokenType.TokenTrue),
+                        _ => return TokenType.TokenIdentifier,
+                    }
+                }
+            }
+        }
+
+        return TokenType.TokenIdentifier;
+    }
+
+    fn advance(self: *Scanner) void {
         if ( !self.isEof() ) self.current += 1;
         return self.code[self.current - 1];
     }
