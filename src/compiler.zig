@@ -1,28 +1,7 @@
 const std = @import("std");
 const my = @import("./my.zig");
 
-pub const Precision = enum {
-    None,
-    Term,
-    Factor,
-};
-
-pub const Parser = struct { };
-
-pub const ParseRule = struct {
-    token_type: my.TokenType,
-    prefix: ?fn(parser: *Parser) void = null,
-    infix: ?fn(parser: *Parser) void = null,
-    precision : Precision,
-};
-
-pub const global_parsing_rules = []ParseRule {
-    .{ .token_type = my.TokenType.TokenLeftParen, .prefix = null, .infix = null, .precision = .None }
-};
-
-
-pub fn compile(allocator: *std.mem.Allocator, source: []u8) !std.ArrayList(Token) {
-    var scanner = my.Scanner.init(source);
+pub fn collect_tokens(allocator: *std.mem.Allocator, source: []u8) !std.ArrayList(Token) {
     var tokens = std.ArrayList(my.Token).init(allocator);
 
     std.debug.print("--------- Compiler initialized:\n", .{});
@@ -43,6 +22,19 @@ pub fn compile(allocator: *std.mem.Allocator, source: []u8) !std.ArrayList(Token
     }
 
     return tokens;
+}
+
+pub fn compile(allocator: *std.mem.Allocator, source: []u8) my.InterpreterError!my.InterpreterResult {
+    var scanner = my.Scanner.init(source);
+    var parser  = my.Parser.init(allocator, &scanner);
+    parser.advance();
+    parser.expression();
+    parser.consume(my.TokenType.TokenEof, "Expected end of expression");
+    if ( parser.hasError ) {
+        return my.InterpreterError.CompileError;
+    } else {
+        return my.InterpreterResult.Ok;
+    }
 }
 
 pub fn interpret(allocator: *std.mem.Allocator, vm: *my.VirtualMachine, source: []u8) my.InterpreterError!my.InterpreterResult {

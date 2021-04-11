@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const TokenType = enum {
+pub const TokenType = enum(u8) {
 // Single-char
 TokenLeftParen, TokenRightParen, TokenLeftBrace, TokenRightBrace, TokenComma, TokenDot, TokenMinus, TokenPlus, TokenSemicolon, TokenSlash, TokenStar, TokenBang,
 // One or two

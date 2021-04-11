@@ -1,6 +1,10 @@
 pub const Stack = @import("./stack.zig").Stack;
 pub const Opcode = @import("./opcodes.zig").Opcode;
-pub const Chunk = @import("./chunk.zig").Chunk;
+
+const chunk = @import("./chunk.zig");
+
+pub const Chunk = chunk.Chunk;
+pub const ChunkBuilder = chunk.ChunkBuilder;
 
 pub const VirtualMachine = @import("./vm.zig").VirtualMachine;
 pub const InterpreterError = @import("./vm.zig").InterpreterError;
@@ -18,4 +22,4 @@ pub const Token = scanner.Token;
 
 const compiler = @import("./compiler.zig");
 pub const compile = compiler.compile;
-
+pub const Parser = @import("./parser.zig").Parser;
