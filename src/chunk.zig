@@ -111,3 +111,42 @@ pub const Chunk = struct {
         return self.constants.items[constant_index];
     }
 };
+
+pub const ChunkBuilder = struct {
+    const Self = @Type();
+    chunk: Chunk,
+    parser: *my.Parser,
+
+    pub fn init(allocator: *std.mem.Allocator, parser: *my.Parser) ChunkBuilder {
+        return ChunkBuilder {
+            .chunk = Chunk.init(allocator),
+            .parser = parser,
+        };
+    }
+
+    pub fn close(self: *ChunkBuilder) Chunk {
+        self.emitReturn();
+        return self.chunk;
+    }
+
+    pub fn emitReturn(self: *ChunkBuilder) void {
+        self.chunk.writeOpcode(my.Opcode.Return, self.parser.previous.line);
+    }
+
+    pub fn emitByte(self: *ChunkBuilder, data: u8) void {
+        self.chunk.write(data, self.parser.previous.line);
+    }
+
+    pub fn emitOpcode(self: *ChunkBuilder, data: my.Opcode) void {
+        self.chunk.writeOpcode(data, self.parser.previous.line);    
+    }
+
+    pub fn emitInstruction(self: *ChunkBuilder, opcode: my.Opcode, arg: u8) void {
+        self.emitOpcode(opcode);
+        self.emitByte(arg);
+    }
+    
+    pub fn emitConstant(self: *ChunkBuilder, value: my.Value) void {
+        self.chunk.writeConstant(value, self.parser.previous.line);
+    }
+};
