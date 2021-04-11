@@ -17,7 +17,7 @@ const Opcode = my.Opcode;
 /// > 1 3  2 2  4 4  5 3
 /// > 6th => 3 2 4
 const LineSpan = packed struct {
-    line: u32,
+    line: usize,
     length: u32,
 };
 
@@ -57,7 +57,7 @@ pub const Chunk = struct {
         if (self.lines.items.len > 0 and self.lines.items[self.lines.items.len - 1].line == line_number) {
             self.lines.items[self.lines.items.len - 1].length += 1;
         } else {
-            self.lines.append(LineSpan{ .length = 1, .line = @intCast(u32, line_number) }) catch unreachable;
+            self.lines.append(LineSpan{ .length = 1, .line = line_number }) catch unreachable;
         }
     }
 

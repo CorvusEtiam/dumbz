@@ -25,7 +25,7 @@ fn is_alpha(char: u8) bool {
 
 pub const Token = struct {
     token_type: TokenType,
-    data: []u8,
+    data: [] const u8,
     line: usize,
 
     pub fn create(scanner: *Scanner, token_type: TokenType) Token {
@@ -36,7 +36,7 @@ pub const Token = struct {
         };
     }
 
-    pub fn err(scanner: *Scanner, message: []u8) Token {
+    pub fn err(scanner: *Scanner, message: [] const u8) Token {
         return Token {
             .token_type = TokenType.Error,
             .data = message,
@@ -74,11 +74,12 @@ pub const Scanner = struct {
     }
 
     fn peek(self: *Scanner) u8 {
+        if ( self.code.len == self.current ) return 0;
         return self.code[self.current];
     }
     
     fn peekNext(self: *Scanner) u8 {
-        return if ( self.isEof() ) 0 else self.code[self.current + 1];
+        return if ( self.code.len == self.current + 1 ) 0 else self.code[self.current + 1];
     }
 
 
@@ -102,12 +103,12 @@ pub const Scanner = struct {
         }
     }
 
-    pub fn nextToken(self: *Scanner) ?Token {
+    pub fn nextToken(self: *Scanner) Token {
         self.skipWhitespace();
         self.start = self.current;
         if ( self.isEof() ) {
             if (self.eof) { 
-                return null; 
+                return Token.err(self, "You keep on polling bruh!!!"); 
             } else {
                 self.eof = true;
                 return Token.create(self, TokenType.Eof);
@@ -160,7 +161,7 @@ pub const Scanner = struct {
         return Token.err(self, "Unexpected character");
     }
 
-    fn lexString(self: *Scanner) ?Token {
+    fn lexString(self: *Scanner) Token {
         while ( self.peek() != '"' and !self.isEof() ) {
             if ( self.peek() == '\n' ) { 
                 self.line += 1;
@@ -173,8 +174,12 @@ pub const Scanner = struct {
         return Token.create(self, TokenType.String);
     }
 
-    fn lexNumber(self: *Scanner) ?Token {
+    fn lexNumber(self: *Scanner) Token {
         while ( is_digit(self.peek()) ) { _ = self.advance(); }
+        
+        if ( self.isEof() ) {
+            return Token.create(self, TokenType.Number); 
+        }
         
         if ( self.peek() == '.' and is_digit(self.peekNext()) ) {
             _ = self.advance(); // skip '.'
@@ -185,13 +190,13 @@ pub const Scanner = struct {
         return Token.create(self, TokenType.Number);
     }
 
-    fn lexIdentifier(self: *Scanner) ?Token {
+    fn lexIdentifier(self: *Scanner) Token {
         while ( is_alpha(self.peek()) or is_digit(self.peek()) ) _ = self.advance();
 
         return Token.create(self, self.lexIdentifierType());
     }
     
-    fn checkKeyword(self: *Scanner, rest: []u8, token_type: TokenType) TokenType {
+    fn checkKeyword(self: *Scanner, rest: []const u8, token_type: TokenType) TokenType {
         var result : TokenType = undefined;
 
         if ( std.mem.startsWith(u8, self.code[self.current..], rest) ) {
@@ -225,6 +230,8 @@ pub const Scanner = struct {
                         'u' => return self.checkKeyword("fun", TokenType.Fun),
                         else => return TokenType.Identifier,
                     }
+                } else {
+                    return TokenType.Identifier;
                 }
             },
             't' => {
@@ -238,10 +245,13 @@ pub const Scanner = struct {
             },
             else => { return TokenType.Identifier; }
         }
+
+        unreachable;
     }
 
     fn advance(self: *Scanner) u8 {
-        if ( !self.isEof() ) self.current += 1;
+        if ( self.isEof() ) return 0;
+        self.current += 1;
         return self.code[self.current - 1];
     }
 };
