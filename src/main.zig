@@ -45,7 +45,7 @@ fn runRepl(allocator: *std.mem.Allocator) !void {
         _ = try out.print("Command to be executed: \n", .{});
         _ = try out.write(result);
         _ = try out.write("\n");
-        _ = try my.compile(result);
+        _ = try my.compile(allocator, result);
     }
 }
 

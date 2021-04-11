@@ -2,15 +2,15 @@ const std = @import("std");
 
 pub const TokenType = enum(u8) {
 // Single-char
-TokenLeftParen, TokenRightParen, TokenLeftBrace, TokenRightBrace, TokenComma, TokenDot, TokenMinus, TokenPlus, TokenSemicolon, TokenSlash, TokenStar, TokenBang,
+LeftParen, RightParen, LeftBrace, RightBrace, Comma, Dot, Minus, Plus, Semicolon, Slash, Star, Bang,
 // One or two
-TokenBangEqual, TokenEqual, TokenEqualEqual, TokenGreater, TokenGreaterEqual, TokenLess, TokenLessEqual,
+BangEqual, Equal, EqualEqual, Greater, GreaterEqual, Less, LessEqual,
 // Literals
-TokenIdentifier, TokenString, TokenNumber,
+Identifier, String, Number,
 // Keywords
-TokenAnd, TokenClass, TokenElse, TokenFalse, TokenFor, TokenFun, TokenIf, TokenNil, TokenOr, TokenPrint, TokenReturn, TokenSuper, TokenThis, TokenTrue, TokenVar, TokenWhile,
+And, Class, Else, False, For, Fun, If, Nil, Or, Print, Return, Super, This, True, Var, While,
 // Tokenization errors
-TokenError, TokenEof
+Error, Eof
 };
 
 
@@ -28,17 +28,17 @@ pub const Token = struct {
     data: []u8,
     line: usize,
 
-    pub fn create(scanner: Scanner, token_type: TokenType) Token {
+    pub fn create(scanner: *Scanner, token_type: TokenType) Token {
         return Token {
-            .token_type = token,
+            .token_type = token_type,
             .data = scanner.code[scanner.start..scanner.current],
             .line = scanner.line,
         };
     }
 
-    pub fn err(scanner: Scanner, message: []const u8) Token {
+    pub fn err(scanner: *Scanner, message: []u8) Token {
         return Token {
-            .token_type = TokenType.TokenError,
+            .token_type = TokenType.Error,
             .data = message,
             .line = scanner.line,
         };
@@ -78,7 +78,7 @@ pub const Scanner = struct {
     }
     
     fn peekNext(self: *Scanner) u8 {
-        return if ( self.isEof() ) '\0' else self.code[self.current + 1];
+        return if ( self.isEof() ) 0 else self.code[self.current + 1];
     }
 
 
@@ -97,7 +97,7 @@ pub const Scanner = struct {
                         return;
                     }
                 },
-                _ => return,
+                else => return,
             }
         }
     }
@@ -110,7 +110,7 @@ pub const Scanner = struct {
                 return null; 
             } else {
                 self.eof = true;
-                return Token.create(self, TokenType.TokenEof);
+                return Token.create(self, TokenType.Eof);
             }
         }
         
@@ -124,28 +124,28 @@ pub const Scanner = struct {
         }
 
         switch ( byte ) {
-            '(' => return Token.create(self, TokenType.TokenLeftParen),
-            ')' => return Token.create(self, TokenType.TokenRightParen),
-            '{' => return Token.create(self, TokenType.TokenLeftBrace),
-            '}' => return Token.create(self, TokenType.TokenRightBrace),
-            '.' => return Token.create(self, TokenType.TokenDot),
-            ',' => return Token.create(self, TokenType.TokenComma),
-            ';' => return Token.create(self, TokenType.TokenSemicolon),
-            '+' => return Token.create(self, TokenType.TokenPlus),
-            '-' => return Token.create(self, TokenType.TokenMinus),
-            '*' => return Token.create(self, TokenType.TokenStar),
-            '/' => return Token.create(self, TokenType.TokenSlash),
+            '(' => return Token.create(self, TokenType.LeftParen),
+            ')' => return Token.create(self, TokenType.RightParen),
+            '{' => return Token.create(self, TokenType.LeftBrace),
+            '}' => return Token.create(self, TokenType.RightBrace),
+            '.' => return Token.create(self, TokenType.Dot),
+            ',' => return Token.create(self, TokenType.Comma),
+            ';' => return Token.create(self, TokenType.Semicolon),
+            '+' => return Token.create(self, TokenType.Plus),
+            '-' => return Token.create(self, TokenType.Minus),
+            '*' => return Token.create(self, TokenType.Star),
+            '/' => return Token.create(self, TokenType.Slash),
             '!' => {
-                return Token.create(self, if (self.match('=')) TokenType.TokenBangEqual else TokenType.TokenBang);
+                return Token.create(self, if (self.match('=')) TokenType.BangEqual else TokenType.Bang);
             },
             '=' => {
-                return Token.create(self, if (self.match('=')) TokenType.TokenEqualEqual else TokenType.TokenEqual);
+                return Token.create(self, if (self.match('=')) TokenType.EqualEqual else TokenType.Equal);
             },
             '>' => {
-                return Token.create(self, if (self.match('=')) TokenType.TokenGreaterEqual else TokenType.TokenGreater);    
+                return Token.create(self, if (self.match('=')) TokenType.GreaterEqual else TokenType.Greater);    
             },
             '<' => {
-                return Token.create(self, if (self.match('=')) TokenType.TokenLessEqual else TokenType.TokenLess);
+                return Token.create(self, if (self.match('=')) TokenType.LessEqual else TokenType.Less);
             },
             '\n' => {
                 self.line += 1;
@@ -154,7 +154,7 @@ pub const Scanner = struct {
             '"' => {
                 return self.lexString();
             },
-            _   => return Token.create(self, TokenType.TokenNumber),
+            else => return Token.create(self, TokenType.Number),
         }
 
         return Token.err(self, "Unexpected character");
@@ -165,30 +165,30 @@ pub const Scanner = struct {
             if ( self.peek() == '\n' ) { 
                 self.line += 1;
             }
-            self.advance();
+            _ = self.advance();
         }
 
         if ( self.isEof() ) return Token.err(self, "Unterminated string");
-        self.advance();
-        return Token.create(self, TokenType.TokenString);
+        _ = self.advance();
+        return Token.create(self, TokenType.String);
     }
 
     fn lexNumber(self: *Scanner) ?Token {
-        while ( is_digit(self.peek()) ) self.advance();
+        while ( is_digit(self.peek()) ) { _ = self.advance(); }
         
         if ( self.peek() == '.' and is_digit(self.peekNext()) ) {
-            self.advance(); // skip '.'
+            _ = self.advance(); // skip '.'
             
-            while ( is_digit(self.peek()) ) self.advance();
+            while ( is_digit(self.peek()) ) { _ = self.advance(); }
         }
         
-        return Token.create(self, TokenType.TokenNumber);
+        return Token.create(self, TokenType.Number);
     }
 
     fn lexIdentifier(self: *Scanner) ?Token {
-        while ( is_alpha(self.peek()) || is_digit(self.peek()) ) self.advance();
+        while ( is_alpha(self.peek()) or is_digit(self.peek()) ) _ = self.advance();
 
-        return Token.create(self.lexIdentifierType());
+        return Token.create(self, self.lexIdentifierType());
     }
     
     fn checkKeyword(self: *Scanner, rest: []u8, token_type: TokenType) TokenType {
@@ -198,7 +198,7 @@ pub const Scanner = struct {
             self.current += rest.len;
             result = token_type;
         } else {
-            result = TokenType.TokenIdentifier;
+            result = TokenType.Identifier;
         }
         // advance current index to the end of keyword
         return result;
@@ -206,42 +206,41 @@ pub const Scanner = struct {
 
     fn lexIdentifierType(self: *Scanner) TokenType {
         switch ( self.peek() ) {
-            'a' => return self.checkKeyword("and", TokenType.TokenAnd),
-            'c' => return self.checkKeyword("class", TokenType.TokenClass),
-            'e' => return self.checkKeyword("else", TokenType.TokenElse),
-            'i' => return self.checkKeyword("if", TokenType.TokenIf),
-            'n' => return self.checkKeyword("nil", TokenType.TokenNil),
-            'o' => return self.checkKeyword("or", TokenType.TokenOr),
-            'p' => return self.checkKeyword("print", TokenType.TokenPrint),
-            'r' => return self.checkKeyword("return", TokenType.TokenReturn),
-            's' => return self.checkKeyword("super", TokenType.TokenSuper),
-            'v' => return self.checkKeyword("var", TokenType.TokenVar),
-            'w' => return self.checkKeyword("while", TokenType.TokenWhile),
+            'a' => return self.checkKeyword("and", TokenType.And),
+            'c' => return self.checkKeyword("class", TokenType.Class),
+            'e' => return self.checkKeyword("else", TokenType.Else),
+            'i' => return self.checkKeyword("if", TokenType.If),
+            'n' => return self.checkKeyword("nil", TokenType.Nil),
+            'o' => return self.checkKeyword("or", TokenType.Or),
+            'p' => return self.checkKeyword("print", TokenType.Print),
+            'r' => return self.checkKeyword("return", TokenType.Return),
+            's' => return self.checkKeyword("super", TokenType.Super),
+            'v' => return self.checkKeyword("var", TokenType.Var),
+            'w' => return self.checkKeyword("while", TokenType.While),
             'f' => {
                 if ( self.code.len - self.current > 1 ) {
                     switch ( self.peekNext() ) {
-                        'a' => return self.checkKeyword("false", TokenType.TokenFalse),
-                        'o' => return self.checkKeyword("for", TokenType.TokenFalse),
-                        'u' => return self.checkKeyword("fun", TokenType.TokenFun),
-                        _ => return TokenType.TokenIdentifier,
+                        'a' => return self.checkKeyword("false", TokenType.False),
+                        'o' => return self.checkKeyword("for", TokenType.False),
+                        'u' => return self.checkKeyword("fun", TokenType.Fun),
+                        else => return TokenType.Identifier,
                     }
                 }
             },
             't' => {
                 if ( self.code.len - self.current > 1 ) {
                     switch ( self.peekNext() ) {
-                        'h' => return self.checkKeyword("this", TokenType.TokenThis),
-                        'r' => return self.checkKeyword("true", TokenType.TokenTrue),
-                        _ => return TokenType.TokenIdentifier,
+                        'h' => return self.checkKeyword("this", TokenType.This),
+                        'r' => return self.checkKeyword("true", TokenType.True),
+                        else => return TokenType.Identifier,
                     }
                 }
-            }
+            },
+            else => { return TokenType.Identifier; }
         }
-
-        return TokenType.TokenIdentifier;
     }
 
-    fn advance(self: *Scanner) void {
+    fn advance(self: *Scanner) u8 {
         if ( !self.isEof() ) self.current += 1;
         return self.code[self.current - 1];
     }
