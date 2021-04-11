@@ -22,4 +22,6 @@ pub const Token = scanner.Token;
 
 const compiler = @import("./compiler.zig");
 pub const compile = compiler.compile;
-pub const Parser = @import("./parser.zig").Parser;
+
+pub const parser = @import("./parser.zig");
+pub const Parser = parser.Parser;

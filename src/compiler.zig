@@ -1,6 +1,7 @@
 const std = @import("std");
 const my = @import("./my.zig");
 
+
 pub fn collect_tokens(allocator: *std.mem.Allocator, source: []u8) !std.ArrayList(Token) {
     var tokens = std.ArrayList(my.Token).init(allocator);
 
@@ -16,7 +17,7 @@ pub fn collect_tokens(allocator: *std.mem.Allocator, source: []u8) !std.ArrayLis
             std.debug.print("    | ", .{});
         }
         std.debug.print("Token<{s}>  {s}\n", .{@tagName(token.token_type), @enumToInt(token.data)});
-        if ( token.token_type == my.TokenType.TokenEof ) {
+        if ( token.token_type == my.TokenType.Eof ) {
             break;
         }
     }
@@ -28,9 +29,9 @@ pub fn compile(allocator: *std.mem.Allocator, source: []u8) my.InterpreterError!
     var scanner = my.Scanner.init(source);
     var parser  = my.Parser.init(allocator, &scanner);
     parser.advance();
-    parser.expression();
-    parser.consume(my.TokenType.TokenEof, "Expected end of expression");
-    if ( parser.hasError ) {
+    my.parser.expression(&parser);
+    parser.consume(my.TokenType.Eof, "Expected end of expression");
+    if ( parser.hadError ) {
         return my.InterpreterError.CompileError;
     } else {
         return my.InterpreterResult.Ok;
