@@ -126,6 +126,9 @@ pub const ChunkBuilder = struct {
 
     pub fn close(self: *ChunkBuilder) Chunk {
         self.emitReturn();
+        if ( my.debug.has_code_printing_enabled ) {
+            my.debug.disassembleChunk(self.chunk, "code");
+        }
         return self.chunk;
     }
 

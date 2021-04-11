@@ -8,6 +8,7 @@ const Chunk = @import("./chunk.zig").Chunk;
 const print = std.debug.print;
 
 pub const has_tracing_enabled : bool = false;
+pub const has_code_printing_enabled: bool = false;
 
 pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
     print("=== {s} ===\n", .{name});
