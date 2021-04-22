@@ -4,6 +4,7 @@ pub const Opcode = @import("./opcodes.zig").Opcode;
 const chunk = @import("./chunk.zig");
 
 pub const Chunk = chunk.Chunk;
+pub const LineSpan = chunk.LineSpan;
 pub const ChunkBuilder = chunk.ChunkBuilder;
 
 pub const VirtualMachine = @import("./vm.zig").VirtualMachine;
@@ -20,8 +21,12 @@ pub const Scanner = scanner.Scanner;
 pub const TokenType = scanner.TokenType;
 pub const Token = scanner.Token;
 
-const compiler = @import("./compiler.zig");
+pub const compiler = @import("./compiler.zig");
 pub const compile = compiler.compile;
 
 pub const parser = @import("./parser.zig");
 pub const Parser = parser.Parser;
+
+// malloc based global allocator
+// prefer passing around allocator param
+pub const global_allocator = @import("std").heap.CAllocator {};

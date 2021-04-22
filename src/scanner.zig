@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub const TokenType = enum(u8) {
 // Single-char
-LeftParen, RightParen, LeftBrace, RightBrace, Comma, Dot, Minus, Plus, Semicolon, Slash, Star, Bang,
+LeftParen, RightParen, LeftBrace, RightBrace, Comma, Dot, Minus, Plus, Semicolon, Slash, Star, Bang, Colon, QuestionMark,
 // One or two
 BangEqual, Equal, EqualEqual, Greater, GreaterEqual, Less, LessEqual,
 // Literals
@@ -26,7 +26,7 @@ fn is_alpha(char: u8) bool {
 pub const Token = struct {
     token_type: TokenType,
     data: [] const u8,
-    line: usize,
+    line: usize = 0,
 
     pub fn create(scanner: *Scanner, token_type: TokenType) Token {
         return Token {
@@ -103,12 +103,12 @@ pub const Scanner = struct {
         }
     }
 
-    pub fn nextToken(self: *Scanner) Token {
+    pub fn nextToken(self: *Scanner) ?Token {
         self.skipWhitespace();
         self.start = self.current;
         if ( self.isEof() ) {
             if (self.eof) { 
-                return Token.err(self, "You keep on polling bruh!!!"); 
+                return null;
             } else {
                 self.eof = true;
                 return Token.create(self, TokenType.Eof);
@@ -136,6 +136,8 @@ pub const Scanner = struct {
             '-' => return Token.create(self, TokenType.Minus),
             '*' => return Token.create(self, TokenType.Star),
             '/' => return Token.create(self, TokenType.Slash),
+            '?' => return Token.create(self, TokenType.QuestionMark),
+            ':' => return Token.create(self, TokenType.Colon),
             '!' => {
                 return Token.create(self, if (self.match('=')) TokenType.BangEqual else TokenType.Bang);
             },

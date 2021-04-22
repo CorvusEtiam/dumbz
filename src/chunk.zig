@@ -10,15 +10,9 @@ const Opcode = my.Opcode;
 /// Chunk data structure
 /// ----------------------------
 /// First main part of intepreter
-///
-/// FIXME: Add run-length encoded lines info 
-/// FIXME: Provide Accessor for given line data. 
-/// > 1 1 1 2 2 4 4 4 4 5 5 5
-/// > 1 3  2 2  4 4  5 3
-/// > 6th => 3 2 4
-const LineSpan = packed struct {
-    line: usize,
-    length: u32,
+pub const LineSpan = packed struct {
+    line: usize = 0,
+    length: u32 = 0,
 };
 
 
@@ -62,13 +56,12 @@ pub const Chunk = struct {
     }
 
     pub fn getLine(self: *Self, offset: usize) usize {
-        const index = @intCast(u32, offset);
         var i: usize = 0;
         var acc: usize = 0;
         while (i < self.lines.items.len) {
             var curr = self.lines.items[i];
             if (offset >= acc and offset < acc + curr.length) {
-                return @as(usize, curr.line);
+                return curr.line;
             } else { // offset > acc + curr.len
                 acc += curr.length;
             }
@@ -115,19 +108,19 @@ pub const Chunk = struct {
 pub const ChunkBuilder = struct {
     const Self = @Type();
     chunk: Chunk,
-    parser: *my.Parser,
+    parser: *my.Parser = undefined,
 
-    pub fn init(allocator: *std.mem.Allocator, parser: *my.Parser) ChunkBuilder {
+
+    pub fn init(allocator: *std.mem.Allocator) ChunkBuilder {
         return ChunkBuilder {
             .chunk = Chunk.init(allocator),
-            .parser = parser,
         };
     }
 
     pub fn close(self: *ChunkBuilder) Chunk {
         self.emitReturn();
         if ( my.debug.has_code_printing_enabled ) {
-            my.debug.disassembleChunk(self.chunk, "code");
+            my.debug.disassembleChunk(&self.chunk, "code");
         }
         return self.chunk;
     }
@@ -141,7 +134,7 @@ pub const ChunkBuilder = struct {
     }
 
     pub fn emitOpcode(self: *ChunkBuilder, data: my.Opcode) void {
-        self.chunk.writeOpcode(data, self.parser.previous.line);    
+        self.chunk.writeOpcode(data, self.parser.previous.line);
     }
 
     pub fn emitInstruction(self: *ChunkBuilder, opcode: my.Opcode, arg: u8) void {
@@ -150,6 +143,11 @@ pub const ChunkBuilder = struct {
     }
     
     pub fn emitConstant(self: *ChunkBuilder, value: my.Value) void {
+        if ( my.debug.has_parser_state_dumping ) {
+            my.debug.dumpParserState(self.parser);
+        }    
+        
+        // FIXME Next line crashes the program
         self.chunk.writeConstant(value, self.parser.previous.line);
     }
 };

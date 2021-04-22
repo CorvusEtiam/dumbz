@@ -17,33 +17,36 @@ pub const Precedence = enum {
 
 pub const Parser = struct {
     const Self = @This();
-    scanner: *my.Scanner = null,
-    previous: my.Token = undefined,
-    current: my.Token = undefined,
+    scanner: *my.Scanner = undefined,
+    previous: my.Token = .{ .token_type = my.TokenType.Error, .data = "Uninit state", .line = 9999 },
+    current: my.Token = .{ .token_type = my.TokenType.Error, .data = "Uninit state", .line = 9999 },
     hadError: bool = false,
     panicMode: bool = false,
     builder: my.ChunkBuilder = undefined,
 
     pub fn init(allocator: *std.mem.Allocator, scanner: *my.Scanner) Self {
-        var parser: Parser = Parser{
+        var parser: Parser = Parser {
             .scanner = scanner,
+            .builder = my.ChunkBuilder.init(allocator),
         };
-        parser.builder = my.ChunkBuilder.init(allocator, &parser);
         return parser;
     }
 
     pub fn advance(self: *Self) void {
         self.previous = self.current;
+        
         while (true) {
-            self.current = self.scanner.nextToken();
-            if (self.current.token_type != my.TokenType.Error) break;
-
+            if ( self.scanner.nextToken() ) | token | {
+                self.current = token;
+                if (token.token_type != my.TokenType.Error) break;
+            }
             self.errorAtCurrent(self.current.data);
         }
     }
 
     pub fn consume(self: *Self, token_type: my.TokenType, error_message: []const u8) void {
         if (self.current.token_type == token_type) {
+            if ( token_type == my.TokenType.Eof ) return;
             self.advance();
             return;
         }
@@ -83,17 +86,24 @@ pub const ParseRule = struct {
 };
 
 fn number(parser: *Parser) void {
+    my.debug.blockStart("number");
     var val: f32 = std.fmt.parseFloat(f32, parser.previous.data) catch unreachable;
     parser.builder.emitConstant(val);
+    my.debug.blockEnd("number");
 }
 
 fn grouping(parser: *Parser) void {
+    my.debug.blockStart("grouping");
     expression(parser);
     parser.consume(my.TokenType.RightParen, "Expect ')' after expression");
+    my.debug.blockEnd("grouping");
 }
 
+
 pub fn expression(parser: *Parser) void {
+    my.debug.blockStart("expression");
     parsePrecedence(parser, Precedence.Assignment);
+    my.debug.blockEnd("expression");
 }
 
 fn getRule(token_type: my.TokenType) *ParseRule {
@@ -118,24 +128,36 @@ fn parsePrecedence(parser: *Parser, prec: Precedence) void {
 }
 
 fn binary(parser: *Parser) void {
+    my.debug.blockStart("binary");
     var operator_type: my.TokenType = parser.previous.token_type;
     var rule = getRule(operator_type);
     parsePrecedence(parser, @intToEnum(Precedence, @enumToInt(rule.precedence) + 1));
 
+    my.debug.blockEnd("binary");
     switch ( operator_type ) {
-        my.TokenType.Plus => { },
-        my.TokenType.Minus => { },
-        my.TokenType.Star => { },
-        my.TokenType.Slash => { },
+        my.TokenType.Plus => { 
+            parser.builder.emitOpcode(my.Opcode.Add);
+        },
+        my.TokenType.Minus => { 
+            parser.builder.emitOpcode(my.Opcode.Substract);
+        },
+        my.TokenType.Star => { 
+            parser.builder.emitOpcode(my.Opcode.Multiply);
+        },
+        my.TokenType.Slash => { 
+            parser.builder.emitOpcode(my.Opcode.Divide);
+        },
         else => unreachable,
     }
 }
 
 fn unary(parser: *Parser) void {
+    my.debug.blockStart("unary");
     var operator_type: my.TokenType = parser.previous.token_type;
     expression(parser);
 
     parsePrecedence(parser, Precedence.Unary);
+    my.debug.blockEnd("unary");
 
     switch (operator_type) {
         my.TokenType.Minus => {
@@ -160,6 +182,8 @@ var global_parsing_rules = [_]ParseRule{
     .{ .token_type = my.TokenType.Slash, .prefix = null, .infix = binary, .precedence = .Factor },
     .{ .token_type = my.TokenType.Star, .prefix = null, .infix = binary, .precedence = .Factor },
     .{ .token_type = my.TokenType.Bang, .prefix = null, .infix = null, .precedence = .None },
+    .{ .token_type = my.TokenType.QuestionMark, .prefix = null, .infix = null, .precedence = .None },
+    .{ .token_type = my.TokenType.Colon, .prefix = null, .infix = null, .precedence = .None },
     .{ .token_type = my.TokenType.BangEqual, .prefix = null, .infix = null, .precedence = .None },
     .{ .token_type = my.TokenType.Equal, .prefix = null, .infix = null, .precedence = .None },
     .{ .token_type = my.TokenType.EqualEqual, .prefix = null, .infix = null, .precedence = .None },
@@ -189,3 +213,7 @@ var global_parsing_rules = [_]ParseRule{
     .{ .token_type = my.TokenType.Error, .prefix = null, .infix = null, .precedence = .None },
     .{ .token_type = my.TokenType.Eof, .prefix = null, .infix = null, .precedence = .None },
 };
+
+// binary
+// 
+// (expr) ? (expr) : (expr)

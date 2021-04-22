@@ -45,6 +45,8 @@ fn runRepl(allocator: *std.mem.Allocator) !void {
         _ = try out.print("Command to be executed: \n", .{});
         _ = try out.write(result);
         _ = try out.write("\n");
+        // var coll = try my.compiler.collect_tokens(allocator, result);
+        // defer coll.deinit();
         _ = try my.compile(allocator, result);
     }
 }
