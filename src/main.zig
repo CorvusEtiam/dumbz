@@ -2,11 +2,6 @@ const std = @import("std");
 const my  = @import("./my.zig");
 
 
-// const Chunk = @import("./chunk.zig").Chunk;
-// const Opcode = @import("./opcodes.zig").Opcode;
-// const disasm = @import("./debug.zig");
-// const VM = @import("./vm.zig");
-
 const CliResult = union(enum) {
     filePath: []const u8,
     version: void,
@@ -64,8 +59,8 @@ fn startCli(allocator: *std.mem.Allocator) anyerror!void {
     // runRepl, runFile, showHelp
     // next error | C-string  
 
-    var result = try (it.next(allocator) orelse ""); 
-
+    var result = try (it.next(allocator) orelse "");     
+    defer allocator.free(result);
     if ( std.mem.eql(u8, result, "") ) {
         cli = CliResult.repl;
     } else if ( std.mem.eql(u8, result, "test") ) {
@@ -102,7 +97,11 @@ fn startCli(allocator: *std.mem.Allocator) anyerror!void {
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var allocator = &gpa.allocator;
-
+    
+    defer {
+        _ = gpa.deinit();
+    }
+    
     try startCli(allocator);
 }
 
@@ -112,14 +111,10 @@ fn runCode(allocator: *std.mem.Allocator) anyerror!void {
     defer chunk.deinit();
 
     var vm = my.VirtualMachine.init(allocator);
-    
-
-
-
-    chunk.writeConstant(3.14, 123);
-    chunk.writeConstant(6.86, 123);
+    chunk.writeConstant(my.Value.asNumber(3.14), 123);
+    chunk.writeConstant(my.Value.asNumber(10.0), 123);
     chunk.writeOpcode(my.Opcode.Add, 123);
-    chunk.writeConstant(2.0, 123);
+    chunk.writeConstant(my.Value.asNumber(2.0), 123);
     chunk.writeOpcode(my.Opcode.Divide, 123);
     chunk.writeOpcode(my.Opcode.Negate, 123);
     chunk.writeOpcode(my.Opcode.Return, 125);

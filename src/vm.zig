@@ -18,6 +18,16 @@ pub const InterpreterError = error {
     RuntimeError,
 };
 
+fn typeError(msg: []const u8, left: my.Value, right: my.Value) InterpreterError!InterpreterResult {
+    std.log.err("TypeError: {s}", .{msg});
+    std.debug.print(" left=", .{});
+    my.printValue(left);
+    std.debug.print(" right=", .{});
+    my.printValue(right);
+    std.debug.print("\n", .{});
+    return my.InterpreterError.RuntimeError;
+}
+
 pub const VirtualMachine = struct {
     const Self = @This();
     chunk: *chunks.Chunk = undefined,
@@ -65,6 +75,10 @@ pub const VirtualMachine = struct {
         self.stack = std.ArrayList(my.Value).init(self.allocator);
     }
 
+    pub fn peek(self: *Self, distance: usize) my.Value {
+        return self.stack.items[self.stack.items.len - distance - 1];
+    }
+
     pub fn popStack(self: *Self) my.Value {
         return self.stack.pop();
     }
@@ -101,27 +115,49 @@ pub const VirtualMachine = struct {
                     self.ip += 3;
                 },
                 Opcode.Negate => {
-                    self.stack.items[self.stack.items.len - 1] = -self.stack.items[self.stack.items.len - 1]; 
+                    if ( self.peek(0).isNumber() ) {
+                        self.stack.items[self.stack.items.len - 1].vt_number = -self.peek(0).vt_number;
+                    } else {
+                        std.log.err("TypeError: you cannot negate non numeric value", .{});
+                        my.printValue(self.peek(0));
+                        return my.InterpreterError.RuntimeError;
+                    }
                 },
                 Opcode.Add => {
                     var b : my.Value = self.popStack();
                     var a : my.Value = self.popStack();
-                    self.pushStack(a + b);
+                    if ( a.isNumber() and b.isNumber() ) {
+                        self.pushStack(my.Value.asNumber(a.number() + b.number()));
+                    } else {
+                        return typeError("TypeError: you cannot add non numeric value", a, b);
+                    }
                 },
                 Opcode.Substract => {
                     var b : my.Value = self.popStack();
                     var a : my.Value = self.popStack();
-                    self.pushStack(a - b);
+                    if ( a.isNumber() and b.isNumber() ) {
+                        self.pushStack(my.Value.asNumber(a.number() - b.number()));
+                    } else {
+                        return typeError("TypeError: you cannot sub non numeric value", a, b);
+                    }
                 },
                 Opcode.Multiply => {
                     var b : my.Value = self.popStack();
                     var a : my.Value = self.popStack();
-                    self.pushStack(a * b);
+                    if ( a.isNumber() and b.isNumber() ) {
+                        self.pushStack(my.Value.asNumber(a.number() * b.number()));
+                    } else {
+                        return typeError("TypeError: you cannot multiply non numeric value", a, b);
+                    }
                 },
                 Opcode.Divide => {
                     var b : my.Value = self.popStack();
                     var a : my.Value = self.popStack();
-                    self.pushStack(a / b);
+                    if ( a.isNumber() and b.isNumber() ) {
+                        self.pushStack(my.Value.asNumber(a.number() / b.number()));
+                    } else {
+                        return typeError("TypeError: you cannot divide non numeric value", a, b);
+                    }
                 },
                 
 //                else => InterpreterError.CompileError,

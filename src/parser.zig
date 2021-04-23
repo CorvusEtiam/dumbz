@@ -88,7 +88,7 @@ pub const ParseRule = struct {
 fn number(parser: *Parser) void {
     my.debug.blockStart("number");
     var val: f32 = std.fmt.parseFloat(f32, parser.previous.data) catch unreachable;
-    parser.builder.emitConstant(val);
+    parser.builder.emitConstant(my.Value.asNumber(val));
     my.debug.blockEnd("number");
 }
 
@@ -169,6 +169,10 @@ fn unary(parser: *Parser) void {
     }
 }
 
+fn conditional_expression(parser: *Parser) void {
+
+}
+
 var global_parsing_rules = [_]ParseRule{
     .{ .token_type = my.TokenType.LeftParen, .prefix = grouping, .infix = null, .precedence = .None },
     .{ .token_type = my.TokenType.RightParen, .prefix = null, .infix = null, .precedence = .None },
@@ -213,7 +217,3 @@ var global_parsing_rules = [_]ParseRule{
     .{ .token_type = my.TokenType.Error, .prefix = null, .infix = null, .precedence = .None },
     .{ .token_type = my.TokenType.Eof, .prefix = null, .infix = null, .precedence = .None },
 };
-
-// binary
-// 
-// (expr) ? (expr) : (expr)

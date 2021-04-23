@@ -23,6 +23,8 @@ fn is_alpha(char: u8) bool {
     return (char >= 'a' and char <= 'z') or (char >= 'A' and char <= 'Z') or char == '_';
 }
 
+/// Scaner => Tokens
+
 pub const Token = struct {
     token_type: TokenType,
     data: [] const u8,
@@ -31,7 +33,7 @@ pub const Token = struct {
     pub fn create(scanner: *Scanner, token_type: TokenType) Token {
         return Token {
             .token_type = token_type,
-            .data = scanner.code[scanner.start..scanner.current],
+            .data = scanner.allocator.dupe(u8, scanner.code[scanner.start..scanner.current]) catch unreachable,
             .line = scanner.line,
         };
     }
@@ -51,13 +53,15 @@ pub const Scanner = struct {
     line: usize,
     code: []u8,
     eof: bool =  false,
+    allocator: *std.mem.Allocator = undefined,
 
-    pub fn init(code: []u8) Scanner {
+    pub fn init(code: []u8, alloc: *std.mem.Allocator) Scanner {
         return Scanner {
             .start = 0,
             .current = 0,
             .line = 1,
             .code = code,
+            .allocator = alloc,
         };
     } 
 

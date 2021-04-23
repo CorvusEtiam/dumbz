@@ -19,7 +19,7 @@ pub const LineSpan = packed struct {
 pub const Chunk = struct {
     const Self = @This();
     code: ArrayList(u8),
-    constants: ArrayList(f32),
+    constants: ArrayList(my.Value),
     lines: ArrayList(LineSpan),
 
     pub fn opCount(self: *Self) usize {
@@ -33,7 +33,7 @@ pub const Chunk = struct {
     pub fn init(allocator: *Allocator) Chunk {
         return .{
             .code = ArrayList(u8).init(allocator),
-            .constants = ArrayList(f32).init(allocator),
+            .constants = ArrayList(my.Value).init(allocator),
             .lines = ArrayList(LineSpan).init(allocator),
         };
     }
@@ -84,7 +84,7 @@ pub const Chunk = struct {
         return self.code.items[offset .. offset + len];
     }
 
-    pub fn writeConstant(self: *Self, value: f32, line_num: usize) void {
+    pub fn writeConstant(self: *Self, value: my.Value, line_num: usize) void {
         var tmp = self.constantCount();
         self.constants.append(value) catch |err| {
             std.debug.panic("ERROR while allocating space for: {d}", .{value});
@@ -100,7 +100,7 @@ pub const Chunk = struct {
         }
     }
 
-    pub fn readConstant(self: *Self, constant_index: usize) f32 {
+    pub fn readConstant(self: *Self, constant_index: usize) my.Value {
         return self.constants.items[constant_index];
     }
 };

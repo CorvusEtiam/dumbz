@@ -26,7 +26,7 @@ pub fn collect_tokens(allocator: *std.mem.Allocator, source: []u8) !std.ArrayLis
 }
 
 pub fn compile(allocator: *std.mem.Allocator, source: []u8) my.InterpreterError!my.InterpreterResult {
-    var scanner = my.Scanner.init(source);
+    var scanner = my.Scanner.init(source, allocator);
     var parser  = my.Parser.init(allocator, &scanner);
     parser.builder.parser = &parser;
     parser.advance();

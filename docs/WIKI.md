@@ -66,3 +66,34 @@ if ( exe.target.isWindows() ) {
         exe.linkSystemLibrary("SDL2");
 }
 ```
+
+# Strings
+
+* If function expect const string, change argument to const or 
+
+# Cloning strings and other objects
+
+```rust
+    const buf = "hello world";
+    std.debug.print("{s}\n", .{buf});
+    var mut: []u8 = try allocator.dupe(u8, buf);
+    defer allocator.free(mut);
+    std.mem.copy(u8, mut[6..], "hello");
+    std.debug.print("{s}\n", .{mut});
+```
+
+# Working with c_void 
+
+# Useful libs
+
+* [SDL2](https://github.com/MasterQ32/SDL.zig/blob/master/src/lib.zig)
+
+# Ziglang tagged union
+
+```rust
+pub const Value = union(enum) {
+    vt_boolean : bool,
+    vt_number: f32,
+    vt_nil: void,
+};
+```
